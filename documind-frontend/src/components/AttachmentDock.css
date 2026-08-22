@@ -1,0 +1,6 @@
+.attachment-dock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 32px 12px;
+}

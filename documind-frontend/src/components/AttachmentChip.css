@@ -1,0 +1,95 @@
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.chip-compact {
+  padding: 5px 8px;
+  min-width: 130px;
+}
+
+.chip-error {
+  border-color: #e3b8a8;
+  background: var(--rust-soft);
+}
+
+.chip-thumb {
+  width: 22px;
+  height: 22px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.chip-spin {
+  animation: spin 0.8s linear infinite;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chip-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.chip-name {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-meta {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  margin-top: 1px;
+}
+
+.chip-error .chip-meta {
+  color: var(--rust);
+}
+
+.chip-progress-track {
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.chip-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.chip-remove:hover {
+  background: var(--paper-recessed);
+  color: var(--ink);
+}

@@ -1,0 +1,6 @@
+﻿myenv/
+__pycache__/
+*.pyd
+*.dll
+.env
+data/

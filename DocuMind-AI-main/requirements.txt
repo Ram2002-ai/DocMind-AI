@@ -1,0 +1,13 @@
+streamlit
+opencv-python
+easyocr
+Pillow
+PyMuPDF
+pdf2image
+langchain
+chromadb
+sentence-transformers
+google-generativeai
+pandas
+numpy
+python-dotenv

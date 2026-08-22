@@ -1,0 +1,119 @@
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.message-list-empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state {
+  max-width: 560px;
+  text-align: center;
+}
+
+.empty-state-mark {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 16px;
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.empty-state-eyebrow {
+  margin-bottom: 8px;
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.empty-state h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.empty-state p {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 24px;
+  text-align: left;
+}
+
+.prompt-card {
+  min-height: 62px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  text-align: left;
+  font: 500 12px/1.4 var(--font-body);
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.prompt-card:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 520px) {
+  .prompt-grid { grid-template-columns: 1fr; }
+}
+
+.message-list-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.skel-line {
+  height: 14px;
+  border-radius: 4px;
+  width: 70%;
+  background: linear-gradient(90deg, var(--paper-recessed) 25%, var(--line) 37%, var(--paper-recessed) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skel-line-short {
+  width: 40%;
+}
+.skel-line-med {
+  width: 55%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}

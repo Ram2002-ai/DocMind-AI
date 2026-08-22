@@ -1,0 +1,25 @@
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--rust-soft);
+  color: var(--rust);
+  border: 1px solid #e3b8a8;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin: 0 32px 12px;
+  font-size: 12.5px;
+}
+
+.error-banner span {
+  flex: 1;
+}
+
+.error-banner button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  padding: 2px;
+}
