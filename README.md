@@ -1,382 +1,281 @@
-# DocuMind AI - Production-Grade Document Intelligence Platform
+# DocuMind AI
 
-A full-stack AI application for intelligent document processing, extraction, and analysis using modern web technologies and advanced AI/ML capabilities.
+DocuMind AI is a full-stack document intelligence platform for uploading, processing, and querying documents with retrieval-augmented generation (RAG). It combines a FastAPI backend for extraction, embedding, and LLM orchestration with a React workspace for multi-thread chat, file attachments, and streamed responses.
 
-## 🎯 Features
+## Overview
 
-### Document Processing
-- ✅ **PDF Text Extraction** - PyMuPDF with OCR fallback for scanned PDFs
-- ✅ **Image OCR** - EasyOCR with image preprocessing
-- ✅ **Text Cleaning** - Intelligent text normalization
-- ✅ **Automatic Chunking** - Configurable text segmentation with metadata
-- ✅ **Embeddings** - Sentence Transformers for semantic search
-- ✅ **Vector Database** - ChromaDB with metadata filtering
+DocuMind AI ingests PDFs, images, and plain-text files, extracts and normalizes their content, chunks and embeds the text, and stores vectors in ChromaDB for semantic retrieval. Users can ask questions in a chat interface and receive answers grounded in uploaded documents, with support for streaming responses and source attribution.
 
-### AI & RAG
-- ✅ **Semantic Search** - Find relevant information across documents
-- ✅ **RAG Chat** - Ask questions about documents with source attribution
-- ✅ **AI Summaries** - Automatic document summarization via OpenRouter LLMs
-- ✅ **Entity Extraction** - Extract emails, phone numbers, dates
-- ✅ **Multi-Document Analysis** - Search and chat across multiple documents
+The platform is designed for modular development: backend services are separated by concern, and the frontend communicates through a stable API contract that can run against a built-in mock backend during UI development.
 
-### User Experience
-- ✅ **Professional Dashboard** - Document management and statistics
-- ✅ **Real-time Processing** - Visual upload and processing pipeline
-- ✅ **Document Library** - Searchable document management
-- ✅ **Document Viewer** - Extracted text and metadata display
-- ✅ **Chat Interface** - ChatGPT-style document Q&A
-- ✅ **Responsive Design** - Mobile-friendly interface
+## Capabilities
 
-### Architecture
-- ✅ **FastAPI Backend** - Modern, type-safe REST API
-- ✅ **React Frontend** - With TypeScript and Tailwind CSS
-- ✅ **PostgreSQL** - Relational database for metadata
-- ✅ **JWT Authentication** - Secure user authentication
-- ✅ **User Isolation** - Complete data privacy per user
-- ✅ **Clean Architecture** - Modular, testable, maintainable code
+### Document processing
 
-## 🏗️ Architecture
+- PDF text extraction with PyMuPDF and OCR fallback for scanned pages
+- Image OCR via EasyOCR with preprocessing
+- Text normalization and configurable chunking with metadata
+- Semantic embeddings using Sentence Transformers
+- Vector storage and retrieval in ChromaDB
+
+### AI and RAG
+
+- Semantic search across document collections
+- RAG-powered chat with streamed LLM responses via OpenRouter
+- Document summarization and entity extraction (emails, phone numbers, dates)
+- Multi-document analysis within a conversation thread
+
+### Workspace UI
+
+- Multi-thread chat with sidebar navigation
+- Drag-and-drop upload for PDF, image, and text files
+- Real-time streaming responses with automatic non-streaming fallback
+- Attachment management per thread
+- Mock API mode for frontend-only development
+
+### Platform
+
+- FastAPI REST API with OpenAPI documentation
+- PostgreSQL for relational metadata
+- JWT-based authentication (available in extended API routes)
+- Per-user data isolation
+- Docker Compose support for core infrastructure services
+
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     React + Vite Frontend                    │
-│              (TypeScript, Tailwind, TanStack Query)          │
-└──────────────────────┬──────────────────────────────────────┘
-                       │ (Axios, JWT Auth)
-                       ▼
+│              React + Vite Frontend (documind-frontend)       │
+│                    TypeScript, SSE streaming                 │
+└──────────────────────────┬──────────────────────────────────┘
+                           │  HTTP / Server-Sent Events
+                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     FastAPI Backend                          │
-│        (Services, Routes, Models, Repositories)             │
-└──────────┬────────────┬────────────┬────────────────────────┘
-           │            │            │
-      ┌────▼──┐  ┌──────▼──┐  ┌─────▼─────┐
-      │   DB  │  │ ChromaDB │  │ OpenRouter│
-      │ (PG)  │  │ (Vectors)│  │   (LLM)   │
-      └───────┘  └──────────┘  └───────────┘
+│                      FastAPI Backend                         │
+│         Routes · Services · Models · Repositories            │
+└──────────┬─────────────────┬─────────────────┬──────────────┘
+           │                 │                 │
+      ┌────▼────┐      ┌─────▼─────┐    ┌─────▼─────┐
+      │PostgreSQL│      │ ChromaDB  │    │ OpenRouter │
+      │ (metadata)│     │ (vectors) │    │   (LLM)    │
+      └─────────┘      └───────────┘    └────────────┘
 ```
 
-## 🚀 Quick Start
+### Processing pipeline
 
-### Prerequisites
+```
+Upload → Validation → Extraction → Text cleaning → Chunking
+  → Embedding → ChromaDB → PostgreSQL metadata → Ready for chat/search
+```
+
+## Tech stack
+
+| Layer | Technologies |
+| --- | --- |
+| Backend | FastAPI, SQLAlchemy, Pydantic, Alembic |
+| Document AI | PyMuPDF, EasyOCR, Sentence Transformers, ChromaDB |
+| LLM | OpenRouter (configurable model) |
+| Frontend | React 19, TypeScript, Vite, React Router |
+| Data | PostgreSQL, ChromaDB |
+| Infrastructure | Docker, Docker Compose |
+
+## Prerequisites
+
 - Python 3.11+
 - Node.js 20+
-- PostgreSQL 14+
-- OpenRouter API Key
-- Docker & Docker Compose (optional)
+- PostgreSQL 14+ (or use Docker Compose)
+- [OpenRouter](https://openrouter.ai/) API key
+- Docker and Docker Compose (optional, recommended for databases)
 
-### Environment Setup
+## Getting started
+
+### 1. Clone the repository
 
 ```bash
-# Clone/setup repository
-cd documind-ai
+git clone <repository-url>
+cd DocuMind-AI-main
+```
 
-# Copy environment template
+### 2. Configure the backend
+
+```bash
 cp backend/.env.example backend/.env
-
-# Update backend/.env with your credentials
-# - OPENROUTER_API_KEY: Your OpenRouter API key
-# - OPENROUTER_MODEL: Default model slug, e.g. openai/gpt-5-mini
-# - JWT_SECRET: Generate a secure random key
-# - DATABASE_URL: PostgreSQL connection string
 ```
 
-### Option 1: Docker Compose (Recommended for Development)
+Edit `backend/.env` and set at minimum:
+
+| Variable | Description |
+| --- | --- |
+| `OPENROUTER_API_KEY` | Your OpenRouter API key |
+| `JWT_SECRET` | A secure random string for token signing |
+| `DATABASE_URL` | PostgreSQL connection string |
+
+Other settings such as embedding model, chunk size, and CORS origins are documented in `backend/.env.example`.
+
+### 3. Configure the frontend
 
 ```bash
-# Start all services
-docker-compose up -d
-
-# Services will be available at:
-# Frontend: http://localhost:3000
-# Backend: http://localhost:8000
-# Backend Docs: http://localhost:8000/docs
-# ChromaDB: http://localhost:8001
+cd documind-frontend
+cp .env.example .env
+npm install
 ```
 
-### Option 2: Local Setup
+For frontend-only development, leave `VITE_USE_MOCK_API=true` in `.env`. The UI runs entirely against an in-memory mock backend with no server required.
 
-**Backend:**
+To connect to the live backend:
+
+```env
+VITE_USE_MOCK_API=false
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+### 4. Run with Docker Compose (databases and backend)
+
+Start PostgreSQL, ChromaDB, and the FastAPI backend:
+
+```bash
+docker-compose up -d postgres chromadb backend
+```
+
+| Service | URL |
+| --- | --- |
+| Backend API | http://localhost:8000 |
+| API documentation | http://localhost:8000/docs |
+| ChromaDB | http://localhost:8001 |
+
+Run the frontend locally:
+
+```bash
+cd documind-frontend
+npm run dev
+```
+
+The Vite dev server typically runs at http://localhost:5173.
+
+### 5. Run locally without Docker
+
+**Backend**
+
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
+# Windows
+venv\Scripts\activate
+
+# macOS / Linux
+source venv/bin/activate
+
 pip install -r requirements.txt
-
-# Run migrations
-alembic upgrade head
-
-# Start server
 python -m uvicorn app.main:app --reload
 ```
 
-**Frontend:**
+Ensure PostgreSQL and ChromaDB are running and that `backend/.env` points to them.
+
+**Frontend**
+
 ```bash
-cd frontend
-
-# Install dependencies
+cd documind-frontend
 npm install
-
-# Start development server
 npm run dev
 ```
 
-## 📁 Project Structure
+## API reference
+
+### Active workspace endpoints
+
+The frontend integrates with the workspace chat API under `/api/threads`:
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/threads` | List conversation threads |
+| `POST` | `/api/threads` | Create a new thread |
+| `DELETE` | `/api/threads/{id}` | Delete a thread |
+| `GET` | `/api/threads/{id}/messages` | Retrieve message history |
+| `POST` | `/api/threads/{id}/files` | Upload a file (multipart) |
+| `DELETE` | `/api/threads/{id}/files/{fileId}` | Remove an attachment |
+| `POST` | `/api/threads/{id}/chat/stream` | Stream a chat response (SSE) |
+
+Interactive documentation is available at http://localhost:8000/docs when the backend is running.
+
+### Extended API routes
+
+Additional route modules exist under `backend/app/api/routes/` for authentication, documents, search, summaries, and entities under the `/api/v1` prefix. These can be registered in `backend/app/main.py` for the full production API surface.
+
+For frontend integration details, see [documind-frontend/README.md](documind-frontend/README.md).
+
+## Project structure
 
 ```
-documind-ai/
+DocuMind-AI-main/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                 # FastAPI application
-│   │   ├── core/                   # Config, security, logging
-│   │   ├── api/routes/             # API endpoints
-│   │   ├── models/                 # SQLAlchemy models
-│   │   ├── schemas/                # Pydantic schemas
-│   │   ├── services/               # Business logic
-│   │   ├── repositories/           # Data access
-│   │   ├── db/                     # Database config
-│   │   └── utils/                  # Utilities
+│   │   ├── main.py              # Application entry point
+│   │   ├── api/routes/          # REST endpoints
+│   │   ├── core/                # Configuration, security, logging
+│   │   ├── db/                  # Database session and base models
+│   │   ├── models/              # SQLAlchemy models
+│   │   ├── schemas/             # Pydantic request/response schemas
+│   │   ├── services/            # Business and AI/ML logic
+│   │   ├── repositories/        # Data access layer
+│   │   └── utils/               # Shared utilities
 │   ├── requirements.txt
 │   ├── .env.example
 │   └── Dockerfile
-│
-├── frontend/
+├── documind-frontend/
 │   ├── src/
-│   │   ├── api/                    # API clients
-│   │   ├── components/             # React components (to build)
-│   │   ├── pages/                  # Page components (to build)
-│   │   ├── hooks/                  # Custom React hooks
-│   │   ├── types/                  # TypeScript types
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
+│   │   ├── api/                 # HTTP client, SSE parser, mock backend
+│   │   ├── components/          # UI components
+│   │   ├── hooks/               # React hooks for threads, chat, upload
+│   │   └── types.ts             # Shared TypeScript types
 │   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   └── Dockerfile
-│
+│   └── .env.example
 ├── docker-compose.yml
-├── setup.sh
+├── IMPLEMENTATION_GUIDE.md
 └── README.md
 ```
 
-## 🔑 Key API Endpoints
-
-### Authentication
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - Login user
-- `GET /api/v1/auth/me` - Get current user
-
-### Documents
-- `POST /api/v1/documents/upload` - Upload document
-- `GET /api/v1/documents` - List documents
-- `GET /api/v1/documents/{id}` - Get document details
-- `GET /api/v1/documents/{id}/text` - Get extracted text
-- `DELETE /api/v1/documents/{id}` - Delete document
-
-### Chat & RAG
-- `POST /api/v1/chat` - Send chat message
-- `GET /api/v1/chat/conversations` - List conversations
-- `GET /api/v1/chat/conversations/{id}` - Get conversation messages
-
-### AI Features
-- `POST /api/v1/search` - Semantic search
-- `POST /api/v1/documents/{id}/summary` - Generate summary
-- `POST /api/v1/documents/{id}/entities` - Extract entities
-
-Full API documentation: `http://localhost:8000/docs`
-
-## 🔒 Security Features
-
-- ✅ **JWT Authentication** - Stateless user authentication
-- ✅ **Password Hashing** - bcrypt password security
-- ✅ **User Isolation** - Data privacy per user
-- ✅ **File Validation** - Type and size restrictions
-- ✅ **CORS Configuration** - Cross-origin request control
-- ✅ **Environment Variables** - No secrets in code
-- ✅ **SQL Injection Prevention** - SQLAlchemy parameterized queries
-- ✅ **Path Traversal Protection** - Safe file handling
-
-## 📊 Data Flow
-
-```
-Upload PDF/Image
-    ↓
-[FastAPI Upload Endpoint]
-    ↓
-[File Validation & Storage]
-    ↓
-[Background Processing] → [Extraction Service]
-    ↓
-[Text Cleaning Service]
-    ↓
-[Chunking Strategy]
-    ↓
-[Embedding Service] (Sentence Transformers)
-    ↓
-[Vector Database] (ChromaDB)
-    ↓
-[PostgreSQL Metadata]
-    ↓
-Document Ready for:
-  • Chat (RAG)
-  • Search (Semantic)
-  • Summary (OpenRouter)
-  • Entities (Regex)
-```
-
-## 🛠️ Development
-
-### Backend Development
-
-```bash
-cd backend
-
-# Run tests
-pytest
-
-# Format code
-black app/
-
-# Lint
-flake8 app/
-
-# Type checking
-mypy app/
-```
-
-### Frontend Development
-
-```bash
-cd frontend
-
-# Run dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Lint
-npm run lint
-```
-
-## 📋 TODO - Next Development Tasks
-
-### Frontend Components (Priority)
-- [ ] UI component library (Button, Input, Modal, Card, etc.)
-- [ ] Layout components (Header, Sidebar, PageContainer)
-- [ ] Document components (DocumentCard, DocumentTable, UploadDropzone)
-- [ ] AI components (ChatMessage, SourceCitation, TypingIndicator)
-
-### Frontend Pages
-- [ ] LoginPage with email/password form
-- [ ] DashboardPage with stats and recent documents
-- [ ] UploadPage with drag-and-drop
-- [ ] DocumentLibraryPage with filtering/sorting
-- [ ] DocumentViewerPage with 3-column layout
-- [ ] ChatPage with RAG interface
-- [ ] SearchPage for semantic search
-- [ ] EntitiesPage for extracted entities
-
-### Quality Improvements
-- [ ] Backend tests (pytest)
-- [ ] Frontend tests (vitest)
-- [ ] Error handling & validation
-- [ ] Loading states & skeleton loaders
-- [ ] Empty states
-- [ ] Error boundaries
-- [ ] Logging & monitoring
-
-### Deployment
-- [ ] Database migrations (Alembic)
-- [ ] Environment configuration
-- [ ] Production Dockerfile optimization
-- [ ] Kubernetes manifests (optional)
-- [ ] CI/CD pipeline (GitHub Actions)
-
-## 🧪 Testing
-
-```bash
-# Backend tests
-cd backend
-pytest tests/
-
-# Frontend tests
-cd frontend
-npm run test
-```
-
-## 📚 Technologies Used
+## Development
 
 ### Backend
-- **FastAPI** - Modern Python web framework
-- **SQLAlchemy** - ORM for database operations
-- **Pydantic** - Data validation
-- **PyMuPDF** - PDF text extraction
-- **EasyOCR** - Image OCR
-- **Sentence Transformers** - Text embeddings
-- **ChromaDB** - Vector database
-- **OpenRouter** - LLM routing and model access
+
+```bash
+cd backend
+pytest                  # Run tests
+black app/              # Format code
+flake8 app/             # Lint
+mypy app/               # Type checking
+```
 
 ### Frontend
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **Tailwind CSS** - Styling
-- **React Router** - Navigation
-- **TanStack Query** - Server state management
-- **Axios** - HTTP client
-- **Zustand** - Client state management
 
-### Infrastructure
-- **PostgreSQL** - Relational database
-- **ChromaDB** - Vector database
-- **Docker** - Containerization
-- **Docker Compose** - Local development
+```bash
+cd documind-frontend
+npm run dev             # Development server
+npm run build           # Production build
+npm run preview         # Preview production build
+npm run lint            # Lint with oxlint
+```
 
-## 📖 Documentation
+## Security
 
-- [Backend API Docs](/backend/API.md) - Detailed API documentation
-- [Frontend Guide](/frontend/GUIDE.md) - Frontend development guide
-- [Deployment Guide](/docs/DEPLOYMENT.md) - Production deployment
-- [Architecture Details](/docs/ARCHITECTURE.md) - System architecture
+- JWT authentication with bcrypt password hashing
+- User-scoped document and conversation isolation
+- File type and size validation on upload
+- Configurable CORS origins
+- Secrets managed through environment variables
+- Parameterized database queries via SQLAlchemy
 
-## 🤝 Contributing
+## Documentation
 
-This is a demonstration of production-grade fullstack AI application architecture. For improvements or questions, please refer to the detailed session progress notes.
+- [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) — Development roadmap and implementation notes
+- [documind-frontend/README.md](documind-frontend/README.md) — Frontend architecture and API contract
+- [Backend OpenAPI docs](http://localhost:8000/docs) — Interactive API reference (when running locally)
 
-## 📄 License
+## Contributing
 
-MIT License - See LICENSE file
-
-## 🎓 Learning Resource
-
-This codebase demonstrates:
-- Production-grade FastAPI architecture
-- Modern React development patterns
-- RAG (Retrieval-Augmented Generation) implementation
-- Vector database integration
-- JWT authentication
-- Modular service-based architecture
-- Clean code practices
-
-## 📞 Support
-
-For issues or questions:
-1. Check the [API documentation](/docs) at http://localhost:8000/docs
-2. Review service implementations in `backend/app/services/`
-3. Check component implementations in `frontend/src/components/`
+Contributions are welcome. When proposing changes, keep diffs focused, follow existing conventions in each module, and update relevant documentation when behavior or configuration changes.
 
 ---
 
-**Status**: Feature-complete backend, Frontend foundation ready for component development
-
-**Next Steps**: Build React UI components and pages using the provided hooks and API clients.
-#   D o c M i n d - A I  
- 
+**DocuMind AI** — Intelligent document processing and conversational search powered by modern AI infrastructure.
