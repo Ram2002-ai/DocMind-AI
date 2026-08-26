@@ -87,6 +87,5 @@ Desktop.ini
 *.sln
 *.sw?
 
-# --- Legacy Streamlit prototype ---
-DocuMind-AI-main/myenv/
-DocuMind-AI-main/.streamlit/secrets.toml
+# --- Legacy / removed prototypes ---
+DocuMind-AI-main/

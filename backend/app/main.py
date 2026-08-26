@@ -18,6 +18,19 @@ setup_logging()
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Lightweight migration for existing SQLite databases
+if settings.DATABASE_URL.startswith("sqlite"):
+    from sqlalchemy import inspect, text
+
+    with engine.connect() as conn:
+        inspector = inspect(conn)
+        if "documents" in inspector.get_table_names():
+            columns = {col["name"] for col in inspector.get_columns("documents")}
+            if "conversation_id" not in columns:
+                conn.execute(text("ALTER TABLE documents ADD COLUMN conversation_id INTEGER"))
+                conn.commit()
+                logger.info("Added documents.conversation_id column")
+
 # Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,

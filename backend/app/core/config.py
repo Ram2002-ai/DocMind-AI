@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings
 # backend/app/core/config.py) so settings load correctly no matter which
 # directory uvicorn/python is launched from (backend/, backend/app/, repo root, ...).
 _BACKEND_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+_ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 # backend/app/ — the anchor for relative SQLite paths (see resolve_sqlite_path below).
 _APP_DIR = Path(__file__).resolve().parents[1]
 
@@ -73,16 +74,17 @@ class Settings(BaseSettings):
     CHROMA_PORT: int = 8001
     CHROMA_COLLECTION_NAME: str = "documents"
     
-    # OpenRouter LLM
-    OPENROUTER_API_KEY: str = ""
-    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_MODEL: str = "openai/gpt-5-mini"
-    OPENROUTER_SITE_URL: str = "http://localhost:3000"
-    OPENROUTER_APP_NAME: str = "DocuMind AI"
-    OPENROUTER_PROVIDER_SORT: str = "throughput"
+    # Groq LLM (OpenAI-compatible API)
+    GROQ_API_KEY: str = ""
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
+    # Vision-capable model for describing uploaded images (photos, charts, scans
+    # with little/no machine-readable text) — OCR alone only captures text that
+    # visually appears in the image, not what the image actually shows.
+    GROQ_VISION_MODEL: str = "qwen/qwen3.6-27b"
     LLM_TIMEOUT_SECONDS: int = 60
     LLM_MAX_RETRIES: int = 2
-    LLM_TEMPERATURE: float = 0.2
+    LLM_TEMPERATURE: float = 0.0
     
     # Embeddings
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
@@ -99,10 +101,15 @@ class Settings(BaseSettings):
     EXTRACT_DIR: str = "data/extracted"
     
     # Supported file types
-    SUPPORTED_FORMATS: List[str] = ["pdf", "png", "jpg", "jpeg", "docx", "txt"]
+    SUPPORTED_FORMATS: List[str] = ["pdf", "png", "jpg", "jpeg", "docx", "txt", "md", "csv", "webp", "gif"]
+
+    # LangGraph
+    LANGGRAPH_CHECKPOINT_PATH: str = "data/langgraph_checkpoints.db"
+    ALPHA_VANTAGE_API_KEY: str = ""
     
     class Config:
-        env_file = str(_BACKEND_ENV_FILE)
+        # Load root first, then backend/.env so local backend settings win.
+        env_file = (str(_ROOT_ENV_FILE), str(_BACKEND_ENV_FILE))
         case_sensitive = True
         extra = "ignore"
 

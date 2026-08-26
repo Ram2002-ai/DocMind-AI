@@ -13,7 +13,7 @@ async def health_check():
         status="ok",
         version=settings.APP_VERSION,
         database="connected",
-        vector_db="connected"
+        vector_db="faiss (in-memory per thread)",
     )
 
 
@@ -24,5 +24,5 @@ async def api_health_check():
         status="ok",
         version=settings.APP_VERSION,
         database="connected",
-        vector_db="connected"
+        vector_db="faiss (in-memory per thread)",
     )

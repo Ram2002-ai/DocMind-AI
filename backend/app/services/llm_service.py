@@ -1,7 +1,8 @@
-"""LLM service backed by the OpenRouter chat completions API."""
+"""LLM service backed by Groq's OpenAI-compatible chat completions API."""
+import base64
 import json
+import mimetypes
 import time
-from pathlib import Path
 from typing import Iterator
 
 import httpx
@@ -13,37 +14,20 @@ logger = get_logger(__name__)
 
 
 class LLMService:
-    """Service for text generation, summaries, and extraction via OpenRouter."""
+    """Service for text generation, summaries, and extraction via Groq."""
 
     def __init__(self):
-        self.model_name = settings.OPENROUTER_MODEL
-        self.api_key = settings.OPENROUTER_API_KEY
-        self.base_url = settings.OPENROUTER_BASE_URL.rstrip("/")
+        self.model_name = settings.GROQ_MODEL
+        self.api_key = settings.GROQ_API_KEY
+        self.base_url = settings.GROQ_BASE_URL.rstrip("/")
         self.max_retries = settings.LLM_MAX_RETRIES
         self.timeout = settings.LLM_TIMEOUT_SECONDS
-        # Local development keeps the shared LLM setting at the repository
-        # root while the backend uses its own .env for database settings.
-        if not self.api_key:
-            try:
-                from dotenv import dotenv_values
-
-                root_env = dotenv_values(Path(__file__).resolve().parents[3] / ".env")
-                self.api_key = root_env.get("OPENROUTER_API_KEY", "")
-                self.model_name = root_env.get("OPENROUTER_MODEL", self.model_name)
-                self.base_url = root_env.get("OPENROUTER_BASE_URL", self.base_url).rstrip("/")
-            except Exception as exc:
-                logger.warning("Unable to load local LLM configuration: %s", exc)
 
     def _headers(self) -> dict:
-        headers = {
+        return {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-        if settings.OPENROUTER_SITE_URL:
-            headers["HTTP-Referer"] = settings.OPENROUTER_SITE_URL
-        if settings.OPENROUTER_APP_NAME:
-            headers["X-Title"] = settings.OPENROUTER_APP_NAME
-        return headers
 
     def _payload(self, prompt: str, stream: bool = False) -> dict:
         return {
@@ -56,10 +40,6 @@ class LLMService:
             ],
             "temperature": settings.LLM_TEMPERATURE,
             "stream": stream,
-            "provider": {
-                "sort": settings.OPENROUTER_PROVIDER_SORT,
-                "allow_fallbacks": True,
-            },
         }
 
     def _extract_text(self, data: dict) -> str:
@@ -77,9 +57,9 @@ class LLMService:
         return content or ""
 
     def generate(self, prompt: str, retries: int = None) -> str:
-        """Generate text from OpenRouter with simple retry logic."""
+        """Generate text from Groq with simple retry logic."""
         if not self.api_key:
-            return "OpenRouter API key is not configured."
+            return "Groq API key is not configured. Set GROQ_API_KEY in your .env file."
 
         if retries is None:
             retries = self.max_retries
@@ -87,7 +67,7 @@ class LLMService:
         for attempt in range(retries + 1):
             try:
                 logger.info(
-                    "Generating content with OpenRouter (%s), attempt %s/%s",
+                    "Generating content with Groq (%s), attempt %s/%s",
                     self.model_name,
                     attempt + 1,
                     retries + 1,
@@ -105,17 +85,17 @@ class LLMService:
                 return "The model returned an empty response."
             except httpx.TimeoutException:
                 if attempt == retries:
-                    logger.error("OpenRouter request timed out after retries")
+                    logger.error("Groq request timed out after retries")
                     return "The language model timed out. Please try again."
                 time.sleep(2 ** attempt)
             except httpx.HTTPStatusError as exc:
                 detail = exc.response.text[:500]
-                logger.error("OpenRouter HTTP error: %s", detail)
+                logger.error("Groq HTTP error: %s", detail)
                 if attempt == retries:
-                    return f"OpenRouter request failed: {exc.response.status_code}"
+                    return f"Groq request failed: {exc.response.status_code} - {detail}"
                 time.sleep(2 ** attempt)
             except Exception as exc:
-                logger.error("OpenRouter generation failed: %s", exc)
+                logger.error("Groq generation failed: %s", exc)
                 if attempt == retries:
                     return f"Error generating content: {exc}"
                 time.sleep(2 ** attempt)
@@ -123,9 +103,9 @@ class LLMService:
         return "Failed to generate content."
 
     def generate_stream(self, prompt: str) -> Iterator[str]:
-        """Yield text chunks as OpenRouter streams them."""
+        """Yield text chunks as Groq streams them."""
         if not self.api_key:
-            yield "OpenRouter API key is not configured."
+            yield "Groq API key is not configured. Set GROQ_API_KEY in your .env file."
             return
 
         try:
@@ -136,7 +116,12 @@ class LLMService:
                     headers=self._headers(),
                     json=self._payload(prompt, stream=True),
                 ) as response:
-                    response.raise_for_status()
+                    if response.status_code >= 400:
+                        # Read the (non-streamed) error body before raising so the
+                        # actual Groq error message reaches the log/response instead
+                        # of a bare status code.
+                        response.read()
+                        response.raise_for_status()
                     for line in response.iter_lines():
                         if not line or not line.startswith("data: "):
                             continue
@@ -159,13 +144,11 @@ class LLMService:
                                     if text:
                                         yield text
         except httpx.HTTPStatusError as exc:
-            logger.error("Streaming generation failed: %s", exc)
-            if exc.response.status_code == 402:
-                yield "OpenRouter credits are required. Add credits at https://openrouter.ai/settings/credits and try again."
-            else:
-                yield f"\n\nOpenRouter request failed ({exc.response.status_code}). Please try again."
+            detail = exc.response.text[:500]
+            logger.error("Groq streaming HTTP error: %s", detail)
+            yield f"\n\nGroq request failed: {exc.response.status_code} - {detail}"
         except Exception as exc:
-            logger.error("Streaming generation failed: %s", exc)
+            logger.error("Groq streaming generation failed: %s", exc)
             yield "\n\nUnable to finish the response. Please try again."
 
     def summarize(self, text: str) -> str:
@@ -231,5 +214,56 @@ Return valid JSON only, no additional text."""
         """Get information about the configured model."""
         return {
             "model_name": self.model_name,
-            "provider": "OpenRouter",
+            "provider": "Groq",
         }
+
+    def describe_image(self, image_path: str) -> str:
+        """Describe an image's visual contents (and transcribe any visible text)
+        using Groq's vision model. Unlike OCR, this actually understands photos,
+        charts, and scenes — not just text that happens to appear in the image.
+        Returns "" on any failure so callers can fall back gracefully.
+        """
+        if not self.api_key:
+            return ""
+        try:
+            mime_type = mimetypes.guess_type(image_path)[0] or "image/jpeg"
+            with open(image_path, "rb") as f:
+                b64_image = base64.b64encode(f.read()).decode("utf-8")
+
+            payload = {
+                "model": settings.GROQ_VISION_MODEL,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Describe this image in detail for someone who cannot see "
+                                    "it: what it shows, any objects, people, or scenes, the "
+                                    "layout, and colors. Then transcribe any visible text "
+                                    "verbatim under a 'Text in image:' heading, or omit that "
+                                    "heading if there is none."
+                                ),
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:{mime_type};base64,{b64_image}"},
+                            },
+                        ],
+                    }
+                ],
+                "temperature": settings.LLM_TEMPERATURE,
+                "max_completion_tokens": 1024,
+            }
+            with httpx.Client(timeout=self.timeout) as client:
+                response = client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=self._headers(),
+                    json=payload,
+                )
+                response.raise_for_status()
+            return self._extract_text(response.json())
+        except Exception as exc:
+            logger.error("Groq vision description failed: %s", exc)
+            return ""

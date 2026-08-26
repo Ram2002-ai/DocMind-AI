@@ -4,13 +4,14 @@ import type { Attachment } from "../types";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const ACCEPTED = [".pdf", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".txt", ".md", ".csv"];
+const ACCEPTED = [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".txt", ".md", ".csv"];
 const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
 
 function kindFor(file: File): Attachment["kind"] {
   if (file.type.includes("pdf")) return "pdf";
   if (file.type.startsWith("image/")) return "image";
   if (file.type.startsWith("text/") || file.name.match(/\.(txt|md|csv)$/i)) return "text";
+  if (file.name.match(/\.docx$/i)) return "text";
   return "other";
 }
 

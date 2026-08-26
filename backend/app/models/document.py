@@ -11,6 +11,7 @@ class Document(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=True, index=True)
     filename = Column(String, nullable=False)  # Display name
     original_filename = Column(String, nullable=False)  # Original uploaded name
     file_type = Column(String, nullable=False)  # pdf, png, jpg, jpeg

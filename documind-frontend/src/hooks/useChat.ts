@@ -75,12 +75,20 @@ export function useChat(threadId: string | null, onThreadTitle?: (title: string)
               prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
             );
           } else if (event.type === "tool_call") {
+            // The agent emits one event when a tool starts (status: "running")
+            // and another when it finishes (status: "done") for the SAME id —
+            // update that entry in place instead of appending a duplicate row.
             setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId
-                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), event.data] }
-                  : m
-              )
+              prev.map((m) => {
+                if (m.id !== assistantId) return m;
+                const existing = m.toolCalls ?? [];
+                const idx = existing.findIndex((tc) => tc.id === event.data?.id);
+                const toolCalls =
+                  idx === -1
+                    ? [...existing, event.data]
+                    : existing.map((tc, i) => (i === idx ? { ...tc, ...event.data } : tc));
+                return { ...m, toolCalls };
+              })
             );
           } else if (event.type === "thread_title") {
             const title = typeof event.data?.title === "string" ? event.data.title : "";

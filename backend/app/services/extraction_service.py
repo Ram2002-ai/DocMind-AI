@@ -7,6 +7,7 @@ from typing import Optional, Tuple
 from docx import Document as DocxFile
 from core.logging import get_logger
 from services.ocr_service import OCRService
+from services.llm_service import LLMService
 
 logger = get_logger(__name__)
 
@@ -35,10 +36,23 @@ class PDFExtractionService:
             
             for page_num, page in enumerate(doc):
                 page_text = page.get_text()
-                text += page_text
+                # OCR fallback for scanned or image-only pages
+                if len(page_text.strip()) < 40:
+                    try:
+                        pix = page.get_pixmap(dpi=200)
+                        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                            pix.save(tmp.name)
+                            ocr_text = self.ocr_service.extract_text_from_image(tmp.name)
+                        if ocr_text.strip():
+                            page_text = ocr_text
+                        os.unlink(tmp.name)
+                    except Exception as ocr_exc:
+                        logger.warning("Page %s OCR fallback failed: %s", page_num + 1, ocr_exc)
+
+                text += page_text + "\n"
                 page_texts.append({
                     "page": page_num + 1,
-                    "text": page_text
+                    "text": page_text,
                 })
             
             doc.close()
@@ -84,6 +98,38 @@ class PDFExtractionService:
         except Exception as e:
             logger.error(f"OCR fallback failed: {str(e)}")
             raise
+
+
+class ImageExtractionService:
+    """Service for understanding image files (photos, charts, screenshots).
+
+    Combines a vision-model description (what the image actually shows) with
+    OCR (text that visually appears in the image) so both photographic
+    content and text-heavy scans/screenshots produce useful, searchable text.
+    """
+
+    def __init__(self):
+        self.ocr_service = OCRService()
+
+    def extract_text_from_image(self, image_path: str) -> Tuple[str, int, Optional[list]]:
+        parts = []
+
+        try:
+            description = LLMService().describe_image(image_path)
+            if description.strip():
+                parts.append(f"Image description: {description.strip()}")
+        except Exception as exc:
+            logger.warning(f"Vision description failed for {image_path}: {exc}")
+
+        try:
+            ocr_text = self.ocr_service.extract_text_from_image(image_path)
+            if ocr_text.strip():
+                parts.append(f"Text detected in image (OCR): {ocr_text.strip()}")
+        except Exception as exc:
+            logger.warning(f"OCR failed for {image_path}: {exc}")
+
+        text = "\n\n".join(parts)
+        return text, 1, [{"page": 1, "text": text}]
 
 
 class DocxExtractionService:
@@ -139,6 +185,7 @@ class ExtractionService:
     def __init__(self):
         self.pdf_service = PDFExtractionService()
         self.ocr_service = OCRService()
+        self.image_service = ImageExtractionService()
         self.docx_service = DocxExtractionService()
         self.txt_service = TextExtractionService()
     
@@ -157,12 +204,11 @@ class ExtractionService:
         
         if file_type_lower == "pdf":
             return self.pdf_service.extract_text_from_pdf(file_path)
-        elif file_type_lower in ["png", "jpg", "jpeg"]:
-            text = self.ocr_service.extract_text_from_image(file_path)
-            return text, 1, [{"page": 1, "text": text}]
+        elif file_type_lower in ["png", "jpg", "jpeg", "webp", "gif"]:
+            return self.image_service.extract_text_from_image(file_path)
         elif file_type_lower == "docx":
             return self.docx_service.extract_text_from_docx(file_path)
-        elif file_type_lower == "txt":
+        elif file_type_lower in ["txt", "md", "csv"]:
             return self.txt_service.extract_text_from_txt(file_path)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
