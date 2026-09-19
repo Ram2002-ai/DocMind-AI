@@ -6,8 +6,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# OpenCV/EasyOCR and PDF conversion need these runtime libraries. gcc is used
-# for packages that do not have a pre-built wheel for the selected platform.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libglib2.0-0 \
@@ -24,6 +22,4 @@ RUN mkdir -p /app/data/uploads /app/data/extracted
 
 EXPOSE 8000
 
-# Compose supplies the database and secrets through environment variables.
-# Reloading is intentionally left to the local development command.
 CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
