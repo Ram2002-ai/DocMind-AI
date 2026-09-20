@@ -26,4 +26,4 @@ EXPOSE 8000
 
 # Compose supplies the database and secrets through environment variables.
 # Reloading is intentionally left to the local development command.
-CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
