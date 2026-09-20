@@ -80,7 +80,15 @@ def _load_embeddings() -> HuggingFaceEmbeddings:
         return HuggingFaceEmbeddings(model_name=model_name)
 
 
-embeddings = _load_embeddings()
+_embeddings: Optional[HuggingFaceEmbeddings] = None
+
+
+def _get_embeddings() -> HuggingFaceEmbeddings:
+    """Load the embedding model only when a document is indexed."""
+    global _embeddings
+    if _embeddings is None:
+        _embeddings = _load_embeddings()
+    return _embeddings
 
 
 def _get_retriever(thread_id: Optional[str]):
@@ -96,7 +104,7 @@ def _update_thread_store(thread_id: str, chunks: list[LCDocument]) -> None:
         existing.add_documents(chunks)
         vector_store = existing
     elif chunks:
-        vector_store = FAISS.from_documents(chunks, embeddings)
+        vector_store = FAISS.from_documents(chunks, _get_embeddings())
     else:
         return
 

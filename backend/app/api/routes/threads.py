@@ -26,8 +26,6 @@ from app.models.conversation import Conversation, Message
 from app.models.document import Document  # Registers the relationship mapper used by Message.
 from app.models.summary import Summary  # Registers the relationship mapper used by Document.
 from app.models.user import User
-from app.services import langgraph_rag_service as agent
-from app.services.extraction_service import ExtractionService
 from app.services.llm_service import LLMService
 
 router = APIRouter(prefix="/api/threads", tags=["Workspace chat"])
@@ -39,6 +37,13 @@ ACCEPTED_SUFFIXES = {"pdf", "docx", "txt", "md", "csv", "png", "jpg", "jpeg", "w
 
 class ChatPayload(BaseModel):
     message: str
+
+
+def _get_agent():
+    """Load the document agent only when a chat or file operation needs it."""
+    from app.services import langgraph_rag_service
+
+    return langgraph_rag_service
 
 
 def _local_user(db: Session) -> User:
@@ -119,7 +124,7 @@ def _index_document(document: Document, thread_id: str) -> None:
     Updates the Document row in place with the extraction result.
     """
     try:
-        summary = agent.ingest_document(
+        summary = _get_agent().ingest_document(
             file_path=document.file_path,
             thread_id=thread_id,
             filename=document.original_filename,
@@ -144,9 +149,9 @@ def _reindex_thread(db: Session, thread_id: str) -> None:
         if d.status == "COMPLETED"
     ]
     if remaining:
-        agent.rebuild_thread_index(thread_id, remaining)
+        _get_agent().rebuild_thread_index(thread_id, remaining)
     else:
-        agent.clear_thread_index(thread_id)
+        _get_agent().clear_thread_index(thread_id)
 
 
 @router.get("")
@@ -171,7 +176,7 @@ def create_thread(db: Session = Depends(get_db)):
 def delete_thread(thread_id: str, db: Session = Depends(get_db)):
     db.delete(_get_thread(thread_id, db))
     db.commit()
-    agent.clear_thread_index(thread_id)
+    _get_agent().clear_thread_index(thread_id)
 
 
 @router.get("/{thread_id}/messages")
@@ -235,12 +240,12 @@ def _ensure_indexed(db: Session, thread_id: str) -> None:
     "ready" status in the UI) persist. Rebuild it on demand before chatting
     so a restart can't silently make document context disappear.
     """
-    if agent.thread_has_document(thread_id):
+    if _get_agent().thread_has_document(thread_id):
         return
     conversation_id = int(thread_id)
     completed = [d for d in _thread_documents(db, conversation_id) if d.status == "COMPLETED"]
     if completed:
-        agent.rebuild_thread_index(thread_id, [
+        _get_agent().rebuild_thread_index(thread_id, [
             {"file_path": d.file_path, "filename": d.original_filename, "file_type": d.file_type}
             for d in completed
         ])
@@ -271,7 +276,7 @@ def stream_chat(thread_id: str, payload: ChatPayload, db: Session = Depends(get_
                 db.commit()
                 yield _sse("thread_title", {"title": title})
 
-            for event_type, body in agent.stream_chat_response(thread_id, question):
+            for event_type, body in _get_agent().stream_chat_response(thread_id, question):
                 if event_type == "token":
                     answer_parts.append(body.get("text", ""))
                 yield _sse(event_type, body)
@@ -304,7 +309,7 @@ def chat_once(thread_id: str, payload: ChatPayload, db: Session = Depends(get_db
         conversation.title = _generate_title(question)
 
     try:
-        answer = agent.invoke_chat_response(thread_id, question)
+        answer = _get_agent().invoke_chat_response(thread_id, question)
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=502, detail=f"Unable to generate a response: {exc}") from exc
