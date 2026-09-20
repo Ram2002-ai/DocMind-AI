@@ -22,7 +22,7 @@ email-validator
 # Document Processing
 PyMuPDF
 pdf2image
-python-poppler
+
 pypdf
 
 # OCR
