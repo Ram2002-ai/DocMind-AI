@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import List
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 # Resolve backend/.env by absolute path (this file lives at
@@ -46,6 +46,26 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = "sqlite:///./documind.db"
+    DATABASE_PRIVATE_URL: str = ""
+
+    @model_validator(mode="after")
+    def prefer_private_database_url(self):
+        """Use Render's private database URL when the public URL is absent.
+
+        A localhost PostgreSQL URL points back to the web service on Render,
+        so it is also replaced when the private URL is available.
+        """
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = "sqlite:///./documind.db"
+
+        database_host = self.DATABASE_URL.lower()
+        if self.DATABASE_PRIVATE_URL and (
+            self.DATABASE_URL.startswith("sqlite")
+            or "@localhost" in database_host
+            or "@127.0.0.1" in database_host
+        ):
+            self.DATABASE_URL = self.DATABASE_PRIVATE_URL
+        return self
 
     @field_validator("DATABASE_URL", mode="after")
     @classmethod

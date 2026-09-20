@@ -38,6 +38,8 @@ The backend reads `backend/.env`. The local configuration uses SQLite, so Postgr
 Copy-Item .env.example .env
 ```
 
+For Render, set `DATABASE_URL` to the linked PostgreSQL service's **Internal Database URL**. Alternatively, set that URL in `DATABASE_PRIVATE_URL`; the backend uses it when `DATABASE_URL` is empty, SQLite, or incorrectly points to `localhost`. Do not use a Render PostgreSQL `localhost` URL from the web service.
+
 The API is available at `http://localhost:8000`; interactive documentation is at `http://localhost:8000/docs` and the health check is at `http://localhost:8000/health`.
 
 ### Frontend
