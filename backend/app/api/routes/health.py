@@ -1,7 +1,7 @@
 """Health check endpoints"""
 from fastapi import APIRouter
-from schemas import HealthResponse
-from core.config import settings
+from app.schemas import HealthResponse
+from app.core.config import settings
 
 router = APIRouter()
 

@@ -29,9 +29,9 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-from core.config import settings
-from core.logging import get_logger
-from services.extraction_service import ExtractionService
+from app.core.config import settings
+from app.core.logging import get_logger
+from app.services.extraction_service import ExtractionService
 
 logger = get_logger(__name__)
 

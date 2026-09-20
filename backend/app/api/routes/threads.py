@@ -21,14 +21,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from db.session import get_db
-from models.conversation import Conversation, Message
-from models.document import Document  # Registers the relationship mapper used by Message.
-from models.summary import Summary  # Registers the relationship mapper used by Document.
-from models.user import User
-from services import langgraph_rag_service as agent
-from services.extraction_service import ExtractionService
-from services.llm_service import LLMService
+from app.db.session import get_db
+from app.models.conversation import Conversation, Message
+from app.models.document import Document  # Registers the relationship mapper used by Message.
+from app.models.summary import Summary  # Registers the relationship mapper used by Document.
+from app.models.user import User
+from app.services import langgraph_rag_service as agent
+from app.services.extraction_service import ExtractionService
+from app.services.llm_service import LLMService
 
 router = APIRouter(prefix="/api/threads", tags=["Workspace chat"])
 

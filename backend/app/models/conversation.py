@@ -2,7 +2,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Table
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from db.base import Base
+from app.db.base import Base
 
 # Association table for many-to-many relationship between Message and Document
 message_document_association = Table(

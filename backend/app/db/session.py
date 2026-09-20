@@ -1,7 +1,7 @@
 """Database connection and session management"""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from core.config import settings
+from app.core.config import settings
 
 # Create database engine. SQLite is the local default and needs this option
 # because FastAPI can serve a request from a thread different to the creator.

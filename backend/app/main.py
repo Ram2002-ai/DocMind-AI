@@ -3,12 +3,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import os
-from core.config import settings
-from core.logging import setup_logging, get_logger
-from db.session import engine
-from db.base import Base
-import models  # noqa: F401 — register SQLAlchemy mappers before create_all
-from api.routes import health, threads
+from app.core.config import settings
+from app.core.logging import setup_logging, get_logger
+from app.db.session import engine
+from app.db.base import Base
+import app.models  # noqa: F401 - register SQLAlchemy mappers before create_all
+from app.api.routes import health, threads
 
 logger = get_logger(__name__)
 

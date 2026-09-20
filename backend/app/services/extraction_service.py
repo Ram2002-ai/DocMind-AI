@@ -5,9 +5,9 @@ import tempfile
 import os
 from typing import Optional, Tuple
 from docx import Document as DocxFile
-from core.logging import get_logger
-from services.ocr_service import OCRService
-from services.llm_service import LLMService
+from app.core.logging import get_logger
+from app.services.ocr_service import OCRService
+from app.services.llm_service import LLMService
 
 logger = get_logger(__name__)
 
