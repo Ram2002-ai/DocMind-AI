@@ -42,7 +42,10 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8000
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "https://docmind-ai-1-hd4f.onrender.com",
+    ]
     
     # Database
     DATABASE_URL: str = "sqlite:///./documind.db"

@@ -4,7 +4,13 @@
  * If your real DocuMind AI backend uses different paths, change them ONLY
  * here — nothing else in the app should hardcode a URL.
  */
-export const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const localApiUrl = "http://localhost:8000";
+const configuredApiUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+
+// Keep localhost as the development fallback, but never send a production
+// HTTPS page to an HTTP backend when the deployment variable is missing.
+export const BASE_URL = configuredApiUrl ||
+  (import.meta.env.PROD ? window.location.origin : localApiUrl);
 
 export const ENDPOINTS = {
   // Threads
