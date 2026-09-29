@@ -14,9 +14,14 @@ logger = get_logger(__name__)
 
 class PDFExtractionService:
     """Service for extracting text from PDF files"""
-    
+
     def __init__(self):
-        self.ocr_service = OCRService()
+        self.ocr_service = None
+
+    def _get_ocr_service(self):
+        if self.ocr_service is None:
+            self.ocr_service = OCRService()
+        return self.ocr_service
     
     def extract_text_from_pdf(self, pdf_path: str) -> Tuple[str, int, Optional[list]]:
         """
@@ -42,7 +47,7 @@ class PDFExtractionService:
                         pix = page.get_pixmap(dpi=200)
                         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                             pix.save(tmp.name)
-                            ocr_text = self.ocr_service.extract_text_from_image(tmp.name)
+                            ocr_text = self._get_ocr_service().extract_text_from_image(tmp.name)
                         if ocr_text.strip():
                             page_text = ocr_text
                         os.unlink(tmp.name)
@@ -85,8 +90,8 @@ class PDFExtractionService:
                 for page_num, image in enumerate(images):
                     image_path = os.path.join(temp_dir, f"page_{page_num}.png")
                     image.save(image_path)
-                    
-                    page_text = self.ocr_service.extract_text_from_image(image_path)
+
+                    page_text = self._get_ocr_service().extract_text_from_image(image_path)
                     text += page_text + "\n"
                     page_texts.append({
                         "page": page_num + 1,
@@ -109,7 +114,12 @@ class ImageExtractionService:
     """
 
     def __init__(self):
-        self.ocr_service = OCRService()
+        self.ocr_service = None
+
+    def _get_ocr_service(self):
+        if self.ocr_service is None:
+            self.ocr_service = OCRService()
+        return self.ocr_service
 
     def extract_text_from_image(self, image_path: str) -> Tuple[str, int, Optional[list]]:
         parts = []
@@ -122,7 +132,7 @@ class ImageExtractionService:
             logger.warning(f"Vision description failed for {image_path}: {exc}")
 
         try:
-            ocr_text = self.ocr_service.extract_text_from_image(image_path)
+            ocr_text = self._get_ocr_service().extract_text_from_image(image_path)
             if ocr_text.strip():
                 parts.append(f"Text detected in image (OCR): {ocr_text.strip()}")
         except Exception as exc:
@@ -184,10 +194,15 @@ class ExtractionService:
     
     def __init__(self):
         self.pdf_service = PDFExtractionService()
-        self.ocr_service = OCRService()
+        self.ocr_service = None
         self.image_service = ImageExtractionService()
         self.docx_service = DocxExtractionService()
         self.txt_service = TextExtractionService()
+
+    def _get_ocr_service(self):
+        if self.ocr_service is None:
+            self.ocr_service = OCRService()
+        return self.ocr_service
     
     def extract_text(self, file_path: str, file_type: str) -> Tuple[str, int, Optional[list]]:
         """

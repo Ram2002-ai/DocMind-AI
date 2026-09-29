@@ -1,18 +1,33 @@
-"""OCR service for image text extraction"""
+"""OCR service for image text extraction."""
+import os
+
 import cv2
 import numpy as np
-import easyocr
+
+from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+try:
+    import easyocr
+except Exception:  # pragma: no cover - missing dependency should fail only at use time
+    easyocr = None
 
 # Global EasyOCR reader
 _ocr_reader = None
 
 
 def _get_ocr_reader():
-    """Get or initialize the EasyOCR reader (singleton pattern)"""
+    """Initialize EasyOCR only when needed to avoid large startup memory spikes."""
     global _ocr_reader
+    if not settings.ENABLE_OCR:
+        raise RuntimeError(
+            "OCR is disabled for this deployment. Set ENABLE_OCR=true in the backend environment "
+            "to enable image OCR processing."
+        )
+    if easyocr is None:
+        raise RuntimeError("easyocr is not installed in the current environment.")
     if _ocr_reader is None:
         logger.info("Initializing EasyOCR reader")
         _ocr_reader = easyocr.Reader(['en'], gpu=False)
@@ -20,11 +35,16 @@ def _get_ocr_reader():
 
 
 class OCRService:
-    """Service for optical character recognition from images"""
-    
+    """Service for optical character recognition from images."""
+
     def __init__(self):
-        self.reader = _get_ocr_reader()
-    
+        self.reader = None
+
+    def _ensure_reader(self):
+        if self.reader is None:
+            self.reader = _get_ocr_reader()
+        return self.reader
+
     def extract_text_from_image(self, image_path: str) -> str:
         """
         Extract text from image using EasyOCR.
@@ -37,17 +57,23 @@ class OCRService:
         """
         try:
             logger.info(f"Extracting text from image: {image_path}")
-            
+            if not settings.ENABLE_OCR:
+                logger.warning(
+                    "OCR is disabled on this deployment; skipping image OCR for %s",
+                    image_path,
+                )
+                return ""
+
             # Preprocess image for better OCR results
             preprocessed_image = self.preprocess_image(image_path)
-            
+
             # Extract text using EasyOCR
-            result = self.reader.readtext(preprocessed_image, detail=0)
+            result = self._ensure_reader().readtext(preprocessed_image, detail=0)
             text = "\n".join(result)
-            
-            logger.info(f"Successfully extracted text from image")
+
+            logger.info("Successfully extracted text from image")
             return text
-            
+
         except Exception as e:
             logger.error(f"Error extracting text from image: {str(e)}")
             raise

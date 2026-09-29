@@ -117,6 +117,7 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 50
     TOP_K: int = 3
     RETRIEVAL_THRESHOLD: float = 0.5
+    ENABLE_OCR: bool = False
     
     # File Upload
     MAX_UPLOAD_SIZE: int = 52428800  # 50MB
