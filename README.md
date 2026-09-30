@@ -1,4 +1,73 @@
-# DocuMind AI
+<div align="center">
+
+# 📄 DocuMind AI
+
+**Chat with your documents. PDFs, Word files, and scanned images, answered in real time with an AI agent.**
+
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-agent-1C3C3C)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+
+<img src="docs/screenshots/demo.png" alt="DocuMind AI chat workspace" width="900" />
+
+<!-- Optional: replace the screenshot above with a demo GIF -->
+<!-- <img src="docs/screenshots/demo.gif" alt="DocuMind AI demo" width="900" /> -->
+
+</div>
+
+## ✨ Features
+
+- **Multi-format ingestion:** PDF, DOCX, TXT, Markdown, CSV, and images (PNG, JPG, WEBP, GIF).
+- **OCR for scanned documents:** EasyOCR + OpenCV extract text from photos and scanned PDFs.
+- **Retrieval-augmented answers:** per-thread FAISS vector stores with local sentence-transformer embeddings.
+- **Tool-calling agent (LangGraph):** document RAG, web search, calculator, and stock lookup, chosen automatically per question.
+- **Streaming responses:** token-by-token answers over Server-Sent Events.
+- **Durable conversation memory:** LangGraph SQLite checkpointer keeps thread context across restarts.
+- **One-command deployment:** Docker Compose runs the frontend, backend, and PostgreSQL.
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    User([User]) --> UI["React 19 + TypeScript + Vite"]
+    UI -- "REST + SSE stream" --> API["FastAPI backend"]
+
+    subgraph Ingestion["Document ingestion"]
+        direction TB
+        EXT["Extraction service<br/>PyMuPDF, python-docx"]
+        OCR["OCR service<br/>EasyOCR + OpenCV"]
+        CHUNK["Text chunking"]
+        EMB["Embeddings<br/>sentence-transformers"]
+        FAISS[("Per-thread<br/>FAISS index")]
+        EXT --> CHUNK
+        OCR --> EXT
+        CHUNK --> EMB --> FAISS
+    end
+
+    subgraph Agent["LangGraph agent"]
+        direction TB
+        LLM["Groq LLM<br/>OpenAI-compatible API"]
+        RAG["Document RAG tool"]
+        WEB["Web search"]
+        CALC["Calculator"]
+        STOCK["Stock lookup"]
+        LLM <--> RAG
+        LLM <--> WEB
+        LLM <--> CALC
+        LLM <--> STOCK
+    end
+
+    API -- "upload" --> EXT
+    API -- "chat" --> LLM
+    RAG --> FAISS
+    LLM -. "checkpoints" .-> CP[("SQLite<br/>LangGraph memory")]
+    API --> DB[("SQLite / PostgreSQL<br/>threads, messages, files")]
+```
+
+**Request flow:** a file is uploaded, then text is extracted (with OCR when needed), chunked, embedded, and stored in that thread's FAISS index. When the user asks a question, the LangGraph agent decides whether to retrieve from the document or call another tool, then streams the Groq-generated answer back over SSE.
 
 DocuMind AI is a document chat workspace. The React/Vite frontend supports threads, file uploads, streamed answers, and a mock mode for UI development. The FastAPI backend extracts text from PDFs, images, Word files, and text files, indexes documents with per-thread FAISS stores, and uses Groq for generated answers.
 
@@ -9,6 +78,8 @@ DocuMind AI is a document chat workspace. The React/Vite frontend supports threa
 - **Metadata:** SQLite by default for local development; PostgreSQL is supported by Compose.
 - **Document retrieval:** FAISS in memory per conversation. Indexes are rebuilt from completed documents after a backend restart.
 - **LLM:** Groq's OpenAI-compatible API.
+- **Agent orchestration:** LangGraph with a SQLite checkpointer for conversation memory, and tools for document RAG, web search, calculator, and stock lookup.
+- **Embeddings:** local `sentence-transformers` models via LangChain's HuggingFace integration.
 - **OCR and extraction:** EasyOCR, OpenCV, PyMuPDF, python-docx, Pillow, and Poppler utilities.
 
 ## Requirements
@@ -47,7 +118,7 @@ The API is available at `http://localhost:8000`; interactive documentation is at
 In a second terminal:
 
 ```powershell
-cd documind-frontend
+cd frontend
 npm install
 Copy-Item .env.example .env
 npm run dev
@@ -112,7 +183,7 @@ cd backend
 python -c "import sys; sys.path.insert(0, 'app'); import main; print('IMPORT_OK')"
 
 # Frontend type-check and production build
-cd ..\documind-frontend
+cd ..\frontend
 npm run build
 
 # Frontend lint
@@ -131,7 +202,7 @@ backend/
   data/uploads/             Persistent uploaded documents
   Dockerfile
 
-documind-frontend/
+frontend/
   src/api/                  API client, routes, mock mode, SSE parser
   src/components/            Chat workspace UI
   src/hooks/                 Thread, chat, and upload state
@@ -144,5 +215,5 @@ docker-compose.yml          Full local container stack
 
 - Never commit real API keys. The repository-root `.env` is used for local provider settings and Compose interpolation.
 - `backend/.env` controls local backend settings and defaults to SQLite.
-- The frontend API paths are centralized in `documind-frontend/src/api/endpoints.ts`.
+- The frontend API paths are centralized in `frontend/src/api/endpoints.ts`.
 - FAISS indexes are process-local. Completed uploaded documents remain in the database and are re-indexed when they are needed after a restart.
